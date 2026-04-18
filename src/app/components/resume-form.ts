@@ -68,6 +68,18 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
                 <option value="modern">Modern</option>
                 <option value="professional">Professional</option>
                 <option value="minimal">Minimalist</option>
+                <option value="creative">Creative (Green/Dark)</option>
+                <option value="elegant">Elegant (Peach)</option>
+                <option value="corporate">Corporate (Teal)</option>
+                <option value="modern-blue">Modern Blue</option>
+                <option value="vibrant-yellow">Vibrant Yellow (Creative)</option>
+                <option value="elegant-green">Elegant Green (Classic)</option>
+                <option value="modern-pro">Modern Pro (Blue/Grey)</option>
+                <option value="bold-teal">Bold Teal (Modern)</option>
+                <option value="classic-cream">Classic Cream (Warm)</option>
+                <option value="sharp-monochrome">Sharp Monochrome (Dark/Light)</option>
+                <option value="dynamic-blue">Dynamic Blue (Geometric)</option>
+                <option value="blush-minimal">Blush Minimal (Soft)</option>
               </select>
             </div>
             <div>
@@ -213,6 +225,10 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
                     <label class="block text-xs font-medium text-emerald-900 mb-1">End Date</label>
                     <input type="text" formControlName="endDate" class="w-full px-3 py-1.5 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
                   </div>
+                  <div class="md:col-span-2">
+                    <label class="block text-xs font-medium text-emerald-900 mb-1">Marks / CGPA / Grade</label>
+                    <input type="text" formControlName="grade" placeholder="e.g. 3.8 CGPA, 85%, A+" class="w-full px-3 py-1.5 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
+                  </div>
                 </div>
               </div>
             }
@@ -237,12 +253,6 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
                   <mat-icon class="text-sm w-4 h-4 leading-4">drag_indicator</mat-icon>
                 </div>
                 <input type="text" formControlName="name" placeholder="Skill name" class="flex-1 px-2 py-1 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
-                <select formControlName="level" class="w-24 px-1 py-1 text-xs border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
-                  <option value="Beginner">Beginner</option>
-                  <option value="Intermediate">Intermediate</option>
-                  <option value="Advanced">Advanced</option>
-                  <option value="Expert">Expert</option>
-                </select>
                 <button type="button" (click)="removeSkill(i)" class="text-red-400 hover:text-red-600">
                   <mat-icon class="text-sm w-4 h-4 leading-4">close</mat-icon>
                 </button>
@@ -311,12 +321,6 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
                   <mat-icon class="text-sm w-4 h-4 leading-4">drag_indicator</mat-icon>
                 </div>
                 <input type="text" formControlName="name" placeholder="Language" class="flex-1 px-2 py-1 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
-                <select formControlName="proficiency" class="w-28 px-1 py-1 text-xs border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
-                  <option value="Native">Native</option>
-                  <option value="Fluent">Fluent</option>
-                  <option value="Intermediate">Intermediate</option>
-                  <option value="Basic">Basic</option>
-                </select>
                 <button type="button" (click)="removeLanguage(i)" class="text-red-400 hover:text-red-600">
                   <mat-icon class="text-sm w-4 h-4 leading-4">close</mat-icon>
                 </button>
@@ -391,10 +395,21 @@ export class ResumeFormComponent implements OnInit {
     languages: this.fb.array([])
   });
 
+  lastEmittedResumeStr: string | null = null;
+
   constructor() {
     effect(() => {
       const currentResume = this.resume();
-      if (currentResume && currentResume.id !== this.form.value.id) {
+      if (currentResume) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { lastModified, ...rest } = currentResume;
+        const currentStr = JSON.stringify(rest);
+        
+        if (currentStr === this.lastEmittedResumeStr) {
+          return;
+        }
+        
+        this.lastEmittedResumeStr = currentStr;
         this.patchForm(currentResume);
       }
     });
@@ -404,6 +419,9 @@ export class ResumeFormComponent implements OnInit {
     this.form.valueChanges.subscribe(val => {
       if (this.form.valid) {
         const updatedResume = { ...this.resume(), ...val };
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { lastModified, ...rest } = updatedResume;
+        this.lastEmittedResumeStr = JSON.stringify(rest);
         this.resumeChange.emit(updatedResume);
       }
     });
@@ -426,22 +444,27 @@ export class ResumeFormComponent implements OnInit {
     if (file) {
       const reader = new FileReader();
       reader.onload = (e: ProgressEvent<FileReader>) => {
-        this.form.get('personalInfo.photoUrl')?.setValue(e.target?.result as string);
+        const updatedPhotoUrl = e.target?.result as string;
+        this.form.get('personalInfo.photoUrl')?.setValue(updatedPhotoUrl);
       };
       reader.readAsDataURL(file);
     }
   }
 
-  patchForm(resume: Resume) {
-    while (this.qualificationsArray.length) this.qualificationsArray.removeAt(0);
-    while (this.skillsArray.length) this.skillsArray.removeAt(0);
-    while (this.projectsArray.length) this.projectsArray.removeAt(0);
-    while (this.languagesArray.length) this.languagesArray.removeAt(0);
+  private syncFormArray<T>(array: FormArray, data: T[], createGroupFn: (data: T) => FormGroup) {
+    while (array.length > data.length) {
+      array.removeAt(array.length - 1, { emitEvent: false });
+    }
+    while (array.length < data.length) {
+      array.push(createGroupFn(data[array.length]), { emitEvent: false });
+    }
+  }
 
-    resume.qualifications.forEach(qual => this.qualificationsArray.push(this.createQualificationGroup(qual)));
-    resume.skills.forEach(skill => this.skillsArray.push(this.createSkillGroup(skill)));
-    resume.projects.forEach(proj => this.projectsArray.push(this.createProjectGroup(proj)));
-    resume.languages.forEach(lang => this.languagesArray.push(this.createLanguageGroup(lang)));
+  patchForm(resume: Resume) {
+    this.syncFormArray(this.qualificationsArray, resume.qualifications, this.createQualificationGroup.bind(this));
+    this.syncFormArray(this.skillsArray, resume.skills, this.createSkillGroup.bind(this));
+    this.syncFormArray(this.projectsArray, resume.projects, this.createProjectGroup.bind(this));
+    this.syncFormArray(this.languagesArray, resume.languages, this.createLanguageGroup.bind(this));
 
     this.form.patchValue({
       title: resume.title,
@@ -451,7 +474,11 @@ export class ResumeFormComponent implements OnInit {
       textSize: resume.textSize,
       lineSpacing: resume.lineSpacing,
       personalInfo: resume.personalInfo,
-      about: resume.about
+      about: resume.about,
+      qualifications: resume.qualifications,
+      skills: resume.skills,
+      projects: resume.projects,
+      languages: resume.languages
     }, { emitEvent: false });
   }
 
@@ -474,7 +501,8 @@ export class ResumeFormComponent implements OnInit {
       startDate: [qual?.startDate || ''],
       endDate: [qual?.endDate || ''],
       current: [qual?.current || false],
-      description: [qual?.description || '']
+      description: [qual?.description || ''],
+      grade: [qual?.grade || '']
     });
   }
 

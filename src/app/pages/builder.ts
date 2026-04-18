@@ -162,6 +162,55 @@ export class BuilderComponent implements OnInit {
       
       const element = document.getElementById('resume-page');
       if (!element) throw new Error('Resume element not found');
+
+      // Convert OKLCH/color() functions to RGB to prevent html2canvas crashes
+      const canvas = document.createElement('canvas');
+      canvas.width = 1;
+      canvas.height = 1;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      
+      const convertColorsInString = (str: string) => {
+        if (!str || typeof str !== 'string') return str;
+        const regex = /(oklch|oklab|color)\([^)]+\)/g;
+        return str.replace(regex, (match) => {
+            if (!ctx) return match;
+            ctx.clearRect(0, 0, 1, 1);
+            ctx.fillStyle = '#000000';
+            ctx.fillStyle = match;
+            ctx.fillRect(0, 0, 1, 1);
+            const data = ctx.getImageData(0, 0, 1, 1).data;
+            return `rgba(${data[0]}, ${data[1]}, ${data[2]}, ${data[3] / 255})`;
+        });
+      };
+
+      const elements = [element, ...Array.from(element.querySelectorAll('*'))] as HTMLElement[];
+      const originalStyles = new Map<HTMLElement, string | null>();
+      const colorProps = [
+        'color', 'backgroundColor', 'borderTopColor', 'borderRightColor', 
+        'borderBottomColor', 'borderLeftColor', 'textDecorationColor', 
+        'outlineColor', 'boxShadow'
+      ];
+      
+      elements.forEach(el => {
+        originalStyles.set(el, el.getAttribute('style'));
+        const css = window.getComputedStyle(el);
+        const newStyles: Record<string, string> = {};
+        let needsUpdate = false;
+        
+        colorProps.forEach(prop => {
+            const val = (css as unknown as Record<string, unknown>)[prop];
+            if (val && typeof val === 'string' && (val.includes('oklch') || val.includes('oklab') || val.includes('color('))) {
+                newStyles[prop] = convertColorsInString(val);
+                needsUpdate = true;
+            }
+        });
+        
+        if (needsUpdate) {
+            Object.keys(newStyles).forEach(prop => {
+                (el.style as unknown as Record<string, string>)[prop] = newStyles[prop];
+            });
+        }
+      });
       
       const opt = {
         margin:       0,
@@ -172,6 +221,16 @@ export class BuilderComponent implements OnInit {
       };
       
       await html2pdf().set(opt).from(element).save();
+
+      // Restore original inline styles
+      elements.forEach(el => {
+         const originalStyle = originalStyles.get(el);
+         if (originalStyle === null) {
+             el.removeAttribute('style');
+         } else if (originalStyle !== undefined) {
+             el.setAttribute('style', originalStyle);
+         }
+      });
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Failed to generate PDF. Please try again.');

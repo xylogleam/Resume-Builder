@@ -36,6 +36,7 @@ export interface Qualification {
   endDate: string;
   current: boolean;
   description: string;
+  grade?: string;
 }
 
 export interface Skill {

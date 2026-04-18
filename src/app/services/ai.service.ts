@@ -1,9 +1,6 @@
 import { Injectable } from '@angular/core';
 import { GoogleGenAI } from '@google/genai';
 
-// @ts-expect-error - GEMINI_API_KEY is injected at runtime
-declare const GEMINI_API_KEY: string;
-
 @Injectable({
   providedIn: 'root'
 })

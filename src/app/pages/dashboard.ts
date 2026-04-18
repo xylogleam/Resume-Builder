@@ -85,8 +85,6 @@ export class DashboardComponent implements OnInit {
   }
 
   deleteResume(id: string) {
-    if (confirm('Are you sure you want to delete this resume?')) {
-      this.resumeService.deleteResume(id);
-    }
+    this.resumeService.deleteResume(id);
   }
 }
