@@ -6,7 +6,7 @@ import { AboutComponent } from './pages/about';
 
 export const routes: Routes = [
   { path: '', component: LandingComponent },
-  { path: 'dashboard', component: DashboardComponent },
+  { path: 'history', component: DashboardComponent },
   { path: 'builder/:id', component: BuilderComponent },
   { path: 'about', component: AboutComponent },
   { path: '**', redirectTo: '' }

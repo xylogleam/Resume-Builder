@@ -13,8 +13,8 @@ import { MatIconModule } from '@angular/material/icon';
       <div class="max-w-6xl mx-auto">
         <div class="flex justify-between items-center mb-10">
           <div>
-            <h1 class="text-4xl font-bold text-emerald-950 tracking-tight">Your Resumes</h1>
-            <p class="text-emerald-800/70 mt-2 font-medium">Manage and edit your saved resumes</p>
+            <h1 class="text-4xl font-bold text-emerald-950 tracking-tight">History</h1>
+            <p class="text-emerald-800/70 mt-2 font-medium">Your progress is automatically saved as you type. Resume where you left off.</p>
           </div>
           <button (click)="createNew()" class="bg-emerald-900 hover:bg-emerald-800 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-lg shadow-emerald-900/20 flex items-center gap-2">
             <mat-icon>add</mat-icon>
@@ -85,6 +85,8 @@ export class DashboardComponent implements OnInit {
   }
 
   deleteResume(id: string) {
-    this.resumeService.deleteResume(id);
+    if (confirm('Are you sure you want to delete this resume?')) {
+      this.resumeService.deleteResume(id);
+    }
   }
 }

@@ -1,7 +1,7 @@
 import { Component, input, output, inject, OnInit, effect, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule } from '@angular/forms';
-import { Resume, Qualification, Skill, Project, Language } from '../models/resume.model';
+import { Resume, Qualification, Skill, Project, Language, Reference, WorkExperience, TEMPLATE_STYLES } from '../models/resume.model';
 import { MatIconModule } from '@angular/material/icon';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 
@@ -53,7 +53,7 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
         <form [formGroup]="form" class="h-full">
         
         <!-- Document Settings -->
-        <div [class.hidden]="currentStepIndex() !== 6" class="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+        <div [class.hidden]="currentStepIndex() !== 8" class="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
           <h2 class="text-lg font-semibold text-emerald-950 flex items-center gap-2 border-b border-emerald-100 pb-2">
             <mat-icon class="text-emerald-700">settings</mat-icon> Document Settings
           </h2>
@@ -114,6 +114,14 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
                 <option value="1.8">Relaxed</option>
               </select>
             </div>
+          </div>
+
+          <div class="pt-4 border-t border-emerald-50 mt-4">
+            <button type="button" (click)="applyOriginalDesign()" class="w-full flex items-center justify-center gap-2 py-3 px-4 bg-emerald-950 text-white font-bold rounded-xl hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-950/20">
+              <mat-icon>auto_fix_high</mat-icon>
+              Original CV Design
+            </button>
+            <p class="text-[11px] text-emerald-800/60 mt-2 text-center italic">Click to match the design, colors and layout of the original template.</p>
           </div>
         </div>
 
@@ -219,11 +227,11 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
                   </div>
                   <div>
                     <label class="block text-xs font-medium text-emerald-900 mb-1">Start Date</label>
-                    <input type="text" formControlName="startDate" class="w-full px-3 py-1.5 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
+                    <input type="text" formControlName="startDate" placeholder="e.g. Sep 2018" class="w-full px-3 py-1.5 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
                   </div>
                   <div>
                     <label class="block text-xs font-medium text-emerald-900 mb-1">End Date</label>
-                    <input type="text" formControlName="endDate" class="w-full px-3 py-1.5 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
+                    <input type="text" formControlName="endDate" placeholder="e.g. Jun 2022" class="w-full px-3 py-1.5 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
                   </div>
                   <div class="md:col-span-2">
                     <label class="block text-xs font-medium text-emerald-900 mb-1">Marks / CGPA / Grade</label>
@@ -235,8 +243,62 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
           </div>
         </div>
 
-        <!-- Skills -->
+        <!-- Experience -->
         <div [class.hidden]="currentStepIndex() !== 3" class="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+          <div class="flex justify-between items-center border-b border-emerald-100 pb-2">
+            <h2 class="text-lg font-semibold text-emerald-950 flex items-center gap-2">
+              <mat-icon class="text-emerald-700">work</mat-icon> Experience
+            </h2>
+            <button type="button" (click)="addExperience()" class="text-sm text-emerald-700 hover:text-emerald-900 font-bold flex items-center gap-1">
+              <mat-icon class="text-sm w-4 h-4 leading-4">add</mat-icon> Add
+            </button>
+          </div>
+          
+          <div formArrayName="experiences" cdkDropList (cdkDropListDropped)="dropExperience($event)" class="space-y-4">
+            @for (exp of experiencesControls; track exp; let i = $index) {
+              <div [formGroupName]="i" cdkDrag class="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 relative group">
+                <div class="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div cdkDragHandle class="cursor-move text-emerald-400 hover:text-emerald-600">
+                    <mat-icon>drag_indicator</mat-icon>
+                  </div>
+                  <button type="button" (click)="removeExperience(i)" class="text-red-400 hover:text-red-600">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pr-12">
+                  <div>
+                    <label class="block text-xs font-medium text-emerald-900 mb-1">Company</label>
+                    <input type="text" formControlName="company" placeholder="e.g. Google" class="w-full px-3 py-1.5 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-emerald-900 mb-1">Position</label>
+                    <input type="text" formControlName="position" placeholder="e.g. Software Engineer" class="w-full px-3 py-1.5 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="block text-xs font-medium text-emerald-900 mb-1">Location</label>
+                    <input type="text" formControlName="location" placeholder="e.g. Lahore, Pakistan" class="w-full px-3 py-1.5 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-emerald-900 mb-1">Start Date</label>
+                    <input type="text" formControlName="startDate" placeholder="e.g. Jan 2023" class="w-full px-3 py-1.5 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-emerald-900 mb-1">End Date</label>
+                    <input type="text" formControlName="endDate" placeholder="Present" class="w-full px-3 py-1.5 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="block text-xs font-medium text-emerald-900 mb-1">Description</label>
+                    <textarea formControlName="description" rows="3" class="w-full px-3 py-1.5 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none resize-none" placeholder="Describe your responsibilities and achievements..."></textarea>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Skills -->
+        <div [class.hidden]="currentStepIndex() !== 4" class="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
           <div class="flex justify-between items-center border-b border-emerald-100 pb-2">
             <h2 class="text-lg font-semibold text-emerald-950 flex items-center gap-2">
               <mat-icon class="text-emerald-700">psychology</mat-icon> Skills
@@ -262,7 +324,7 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
         </div>
 
         <!-- Projects -->
-        <div [class.hidden]="currentStepIndex() !== 4" class="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+        <div [class.hidden]="currentStepIndex() !== 5" class="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
           <div class="flex justify-between items-center border-b border-emerald-100 pb-2">
             <h2 class="text-lg font-semibold text-emerald-950 flex items-center gap-2">
               <mat-icon class="text-emerald-700">code</mat-icon> Projects
@@ -304,7 +366,7 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
         </div>
 
         <!-- Languages -->
-        <div [class.hidden]="currentStepIndex() !== 5" class="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+        <div [class.hidden]="currentStepIndex() !== 6" class="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
           <div class="flex justify-between items-center border-b border-emerald-100 pb-2">
             <h2 class="text-lg font-semibold text-emerald-950 flex items-center gap-2">
               <mat-icon class="text-emerald-700">language</mat-icon> Languages
@@ -324,6 +386,56 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
                 <button type="button" (click)="removeLanguage(i)" class="text-red-400 hover:text-red-600">
                   <mat-icon class="text-sm w-4 h-4 leading-4">close</mat-icon>
                 </button>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- References -->
+        <div [class.hidden]="currentStepIndex() !== 7" class="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+          <div class="flex justify-between items-center border-b border-emerald-100 pb-2">
+            <h2 class="text-lg font-semibold text-emerald-950 flex items-center gap-2">
+              <mat-icon class="text-emerald-700">groups</mat-icon> References
+            </h2>
+            <button type="button" (click)="addReference()" class="text-sm text-emerald-700 hover:text-emerald-900 font-bold flex items-center gap-1">
+              <mat-icon class="text-sm w-4 h-4 leading-4">add</mat-icon> Add
+            </button>
+          </div>
+          
+          <div formArrayName="references" cdkDropList (cdkDropListDropped)="dropReference($event)" class="space-y-4">
+            @for (ref of referencesControls; track ref; let i = $index) {
+              <div [formGroupName]="i" cdkDrag class="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 relative group">
+                <div class="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div cdkDragHandle class="cursor-move text-emerald-400 hover:text-emerald-600">
+                    <mat-icon>drag_indicator</mat-icon>
+                  </div>
+                  <button type="button" (click)="removeReference(i)" class="text-red-400 hover:text-red-600">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pr-12">
+                  <div>
+                    <label class="block text-xs font-medium text-emerald-900 mb-1">Name</label>
+                    <input type="text" formControlName="name" placeholder="e.g. Jane Doe" class="w-full px-3 py-1.5 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-emerald-900 mb-1">Position / Title</label>
+                    <input type="text" formControlName="position" placeholder="e.g. Senior Manager" class="w-full px-3 py-1.5 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="block text-xs font-medium text-emerald-900 mb-1">Company</label>
+                    <input type="text" formControlName="company" placeholder="e.g. Tech Corp" class="w-full px-3 py-1.5 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-emerald-900 mb-1">Email</label>
+                    <input type="email" formControlName="email" class="w-full px-3 py-1.5 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-emerald-900 mb-1">Phone</label>
+                    <input type="text" formControlName="phone" class="w-full px-3 py-1.5 text-sm border border-emerald-200 rounded focus:ring-1 focus:ring-yellow-400 outline-none">
+                  </div>
+                </div>
               </div>
             }
           </div>
@@ -359,9 +471,11 @@ export class ResumeFormComponent implements OnInit {
     { id: 'personal', title: 'Personal Info', icon: 'person' },
     { id: 'about', title: 'About', icon: 'article' },
     { id: 'qualifications', title: 'Qualifications', icon: 'school' },
+    { id: 'experiences', title: 'Experience', icon: 'work' },
     { id: 'skills', title: 'Skills', icon: 'psychology' },
     { id: 'projects', title: 'Projects', icon: 'code' },
     { id: 'languages', title: 'Languages', icon: 'language' },
+    { id: 'references', title: 'References', icon: 'groups' },
     { id: 'settings', title: 'Design', icon: 'palette' }
   ];
   
@@ -389,13 +503,16 @@ export class ResumeFormComponent implements OnInit {
       photoUrl: ['']
     }),
     about: [''],
+    experiences: this.fb.array([]),
     qualifications: this.fb.array([]),
     skills: this.fb.array([]),
     projects: this.fb.array([]),
-    languages: this.fb.array([])
+    languages: this.fb.array([]),
+    references: this.fb.array([])
   });
 
   lastEmittedResumeStr: string | null = null;
+  private firstLoad = true;
 
   constructor() {
     effect(() => {
@@ -413,6 +530,16 @@ export class ResumeFormComponent implements OnInit {
         this.patchForm(currentResume);
       }
     });
+
+    effect(() => {
+      const step = this.currentStepIndex();
+      const currentResume = this.resume();
+      if (currentResume && currentResume.lastStep !== step) {
+        const updatedResume = { ...currentResume, lastStep: step };
+        // Update lastEmittedResumeStr to prevent loop if needed, but lastStep is outside form val
+        this.resumeChange.emit(updatedResume);
+      }
+    });
   }
 
   ngOnInit() {
@@ -425,6 +552,19 @@ export class ResumeFormComponent implements OnInit {
         this.resumeChange.emit(updatedResume);
       }
     });
+  }
+
+  applyOriginalDesign() {
+    const templateId = this.form.get('templateId')?.value;
+    const defaults = TEMPLATE_STYLES[templateId];
+    if (defaults) {
+      this.form.patchValue({
+        themeColor: defaults.themeColor,
+        fontFamily: defaults.fontFamily,
+        textSize: defaults.textSize,
+        lineSpacing: defaults.lineSpacing
+      });
+    }
   }
 
   nextStep() {
@@ -461,10 +601,17 @@ export class ResumeFormComponent implements OnInit {
   }
 
   patchForm(resume: Resume) {
+    if (this.firstLoad && resume.lastStep !== undefined) {
+      this.currentStepIndex.set(resume.lastStep);
+      this.firstLoad = false;
+    }
+
+    this.syncFormArray(this.experiencesArray, resume.experiences || [], this.createExperienceGroup.bind(this));
     this.syncFormArray(this.qualificationsArray, resume.qualifications, this.createQualificationGroup.bind(this));
     this.syncFormArray(this.skillsArray, resume.skills, this.createSkillGroup.bind(this));
     this.syncFormArray(this.projectsArray, resume.projects, this.createProjectGroup.bind(this));
-    this.syncFormArray(this.languagesArray, resume.languages, this.createLanguageGroup.bind(this));
+    this.syncFormArray(this.languagesArray, resume.languages || [], this.createLanguageGroup.bind(this));
+    this.syncFormArray(this.referencesArray, resume.references || [], this.createReferenceGroup.bind(this));
 
     this.form.patchValue({
       title: resume.title,
@@ -475,22 +622,41 @@ export class ResumeFormComponent implements OnInit {
       lineSpacing: resume.lineSpacing,
       personalInfo: resume.personalInfo,
       about: resume.about,
+      experiences: resume.experiences || [],
       qualifications: resume.qualifications,
       skills: resume.skills,
       projects: resume.projects,
-      languages: resume.languages
+      languages: resume.languages,
+      references: resume.references || []
     }, { emitEvent: false });
   }
 
+  get experiencesArray() { return this.form.get('experiences') as FormArray; }
   get qualificationsArray() { return this.form.get('qualifications') as FormArray; }
   get skillsArray() { return this.form.get('skills') as FormArray; }
   get projectsArray() { return this.form.get('projects') as FormArray; }
   get languagesArray() { return this.form.get('languages') as FormArray; }
+  get referencesArray() { return this.form.get('references') as FormArray; }
 
+  get experiencesControls() { return this.experiencesArray.controls; }
   get qualificationsControls() { return this.qualificationsArray.controls; }
   get skillsControls() { return this.skillsArray.controls; }
   get projectsControls() { return this.projectsArray.controls; }
   get languagesControls() { return this.languagesArray.controls; }
+  get referencesControls() { return this.referencesArray.controls; }
+
+  createExperienceGroup(exp?: Partial<WorkExperience>) {
+    return this.fb.group({
+      id: [exp?.id || 'exp_' + Math.random().toString(36).substr(2, 9)],
+      company: [exp?.company || ''],
+      position: [exp?.position || ''],
+      location: [exp?.location || ''],
+      startDate: [exp?.startDate || ''],
+      endDate: [exp?.endDate || ''],
+      current: [exp?.current || false],
+      description: [exp?.description || '']
+    });
+  }
 
   createQualificationGroup(qual?: Partial<Qualification>) {
     return this.fb.group({
@@ -532,6 +698,20 @@ export class ResumeFormComponent implements OnInit {
     });
   }
 
+  createReferenceGroup(ref?: Partial<Reference>) {
+    return this.fb.group({
+      id: [ref?.id || 'ref_' + Math.random().toString(36).substr(2, 9)],
+      name: [ref?.name || ''],
+      position: [ref?.position || ''],
+      company: [ref?.company || ''],
+      email: [ref?.email || ''],
+      phone: [ref?.phone || '']
+    });
+  }
+
+  addExperience() { this.experiencesArray.push(this.createExperienceGroup()); }
+  removeExperience(index: number) { this.experiencesArray.removeAt(index); }
+  
   addQualification() { this.qualificationsArray.push(this.createQualificationGroup()); }
   removeQualification(index: number) { this.qualificationsArray.removeAt(index); }
   
@@ -543,6 +723,14 @@ export class ResumeFormComponent implements OnInit {
   
   addLanguage() { this.languagesArray.push(this.createLanguageGroup()); }
   removeLanguage(index: number) { this.languagesArray.removeAt(index); }
+
+  addReference() { this.referencesArray.push(this.createReferenceGroup()); }
+  removeReference(index: number) { this.referencesArray.removeAt(index); }
+
+  dropExperience(event: CdkDragDrop<unknown[]>) {
+    moveItemInArray(this.experiencesArray.controls, event.previousIndex, event.currentIndex);
+    this.experiencesArray.updateValueAndValidity();
+  }
 
   dropQualification(event: CdkDragDrop<unknown[]>) {
     moveItemInArray(this.qualificationsArray.controls, event.previousIndex, event.currentIndex);
@@ -562,5 +750,10 @@ export class ResumeFormComponent implements OnInit {
   dropLanguage(event: CdkDragDrop<unknown[]>) {
     moveItemInArray(this.languagesArray.controls, event.previousIndex, event.currentIndex);
     this.languagesArray.updateValueAndValidity();
+  }
+
+  dropReference(event: CdkDragDrop<unknown[]>) {
+    moveItemInArray(this.referencesArray.controls, event.previousIndex, event.currentIndex);
+    this.referencesArray.updateValueAndValidity();
   }
 }
